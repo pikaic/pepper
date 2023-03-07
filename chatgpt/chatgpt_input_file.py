@@ -1,6 +1,7 @@
 #! /home/logan_18/anaconda3/envs/pepperenv/bin/python3
 # -*- encoding: UTF-8 -*-
-# importing stuff
+
+
 import openai
 import json
 
@@ -11,7 +12,7 @@ completion=openai.Completion.create(engine="text-davinci-003",prompt=question,ma
 response=completion.choices[0]['text']
 
 
-# everything is gg
+
 #writing the output to a json file
 sorted_output=json.dumps(response)
 with open('json_file.json', "w") as outfile:
