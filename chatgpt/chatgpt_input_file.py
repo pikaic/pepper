@@ -6,7 +6,7 @@ import openai
 import json
 
 #this is the api key
-openai.api_key="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"
+openai.api_key="your api key"
 question=input("Enter your question: ")
 completion=openai.Completion.create(engine="text-davinci-003",prompt=question,max_tokens=1000)
 response=completion.choices[0]['text']
