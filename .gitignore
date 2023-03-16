@@ -1,4 +1,6 @@
-chatgpt/google_speech_api.json
-chatgpt/json_file.json
-chatgpt/recording.mp3
-chatgpt/tempCodeRunnerFile.py
+
+chatgpt/experiments/google_speech_api.json
+/home/logan_18/pepper/chatgpt/json_file.json
+
+chatgpt/recordings/recording.mp3
+chatgpt/chatgpt.sh

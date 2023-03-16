@@ -56,5 +56,5 @@ def record_audio(path, filename, duration):
     
 # Example usage: Record 5 seconds of audio and save it as "recording.mp3"
 print("What do you want to know?")
-record_audio("./chatgpt", "recording.mp3", 7)
+record_audio("/home/logan_18/pepper/chatgpt/recordings", "recording.mp3", 7)
 print("Question recorded!!")
