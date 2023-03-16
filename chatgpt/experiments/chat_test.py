@@ -14,7 +14,7 @@ import functools
 
 def chatgpt_response(question):
 
-    openai.api_key="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"
+    openai.api_key=
     conversation=[{"role":"system","content":"You are a helpful assistant"}]
 
     while(1):
