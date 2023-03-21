@@ -1,6 +1,9 @@
 #! /home/logan_18/anaconda3/envs/peppercudaenv/bin/python3
 # -*- encoding: UTF-8 -*-
 
+# import openai
+# import os
+
 # import subprocess
 
 # subprocess.run(['python','/home/logan_18/pepper/chatgpt/client.py'])
@@ -66,94 +69,84 @@
 
 
 
-import functools
-# import whisper
-# import openai
+from pynput import keyboard
+import time
 import pyaudio
 import wave
-import os
-import keyboard
+import sched
+import sys
 
-frames=[]
+CHUNK = 8192
+FORMAT = pyaudio.paInt16
+CHANNELS = 2
+RATE = 44100
+RECORD_SECONDS = 5
+WAVE_OUTPUT_FILENAME = "output.mp3"
 
-def record_audio(path, filename):
-    # Set the parameters for the audio stream
-    chunk = 1024
-    sample_format = pyaudio.paInt16
-    channels = 1
-    fs = 44100
-    
-    # Initialize the PyAudio object
-    p = pyaudio.PyAudio()
-    
-    # Open the audio stream
-    stream = p.open(format=sample_format,
-                    channels=channels,
-                    rate=fs,
-                    frames_per_buffer=chunk,
-                    input=True)
-    
-    # frames = []
-    
+p = pyaudio.PyAudio()
+frames = []
 
-    def callback(event):
-        global frames
-        if event.event_type=="down":
-            print("Recording")
-            frames=[]
-            while not keyboard.is_pressed("space"):
-                data=stream.read(chunk)
-                frames.append(data)
-            keyboard.unhook_all()
-            print("recording stopped")
+def callback(in_data, frame_count, time_info, status):
+    frames.append(in_data)
+    return (in_data, pyaudio.paContinue)
 
+class MyListener(keyboard.Listener):
+    def __init__(self):
+        super(MyListener, self).__init__(self.on_press, self.on_release)
+        self.key_pressed = None
+        self.wf = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+        self.wf.setnchannels(CHANNELS)
+        self.wf.setsampwidth(p.get_sample_size(FORMAT))
+        self.wf.setframerate(RATE)
+    def on_press(self, key):
+        if key.char == 'r':
+            self.key_pressed = True
+        return True
 
-            stream.stop_stream()
-            stream.close()
-            
-            # Terminate the PyAudio object
-            p.terminate()
-            
-            # Save the recorded audio as a WAV file
-            file_path = os.path.join(path, filename)
-            wf = wave.open(file_path, 'wb')
-            wf.setnchannels(channels)
-            wf.setsampwidth(p.get_sample_size(sample_format))
-            wf.setframerate(fs)
-            wf.writeframes(b''.join(frames))
-            wf.close()
-    
-    # Set the keyboard callback
-    keyboard.on_press(callback)
-    
-    # Start the keyboard listener
-    keyboard.wait()
+    def on_release(self, key):
+        if key.char == 'r':
+            self.key_pressed = False
+        return True
 
 
-    # # Record the audio for the specified duration
-    # for i in range(int(fs / chunk * duration)):
-    #     data = stream.read(chunk)
-    #     frames.append(data)
-    
-    # # Stop and close the audio stream
-    # stream.stop_stream()
-    # stream.close()
-    
-    # # Terminate the PyAudio object
-    # p.terminate()
-    
-    # # Save the recorded audio as a WAV file
-    # file_path = os.path.join(path, filename)
-    # wf = wave.open(file_path, 'wb')
-    # wf.setnchannels(channels)
-    # wf.setsampwidth(p.get_sample_size(sample_format))
-    # wf.setframerate(fs)
-    # wf.writeframes(b''.join(frames))
-    # wf.close()
+listener = MyListener()
+listener.start()
+started = False
+stream = None
 
-    # Convert the WAV file to MP3
-    # os.system(f"ffmpeg -i {filename} -acodec libmp3lame -aq 4 {filename[:-4]}.mp3")
-    
-# Example usage: Record 5 seconds of audio and save it as "recording.mp3"
-print("What do you want to know?")
-record_audio("/home/logan_18/pepper/chatgpt/recordings", "new_recording.mp3")
+def recorder():
+    global started, p, stream, frames
+
+    if listener.key_pressed and not started:
+        # Start the recording
+        try:
+            stream = p.open(format=FORMAT,
+                             channels=CHANNELS,
+                             rate=RATE,
+                             input=True,
+                             frames_per_buffer=CHUNK,
+                             stream_callback = callback)
+            print("Stream active:", stream.is_active())
+            started = True
+            print("start Stream")
+        except:
+            raise
+
+    elif not listener.key_pressed and started:
+        print("Stop recording")
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+        listener.wf.writeframes(b''.join(frames))
+        listener.wf.close()
+        print("You should have a wav file in the current directory")
+        sys.exit()
+    # Reschedule the recorder function in 100 ms.
+    task.enter(0.1, 1, recorder, ())
+
+
+print("Press and hold the 'r' key to begin recording")
+print("Release the 'r' key to end recording")
+task = sched.scheduler(time.time, time.sleep)
+task.enter(0.1, 1, recorder, ())
+task.run()

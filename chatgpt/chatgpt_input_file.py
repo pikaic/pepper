@@ -11,7 +11,6 @@ import functools
 import subprocess
 import pyglet
 
-openai_api_key=""
 path_to_save_recording="/home/logan_18/pepper/chatgpt/recordings"
 recorded_audio_path="/home/logan_18/pepper/chatgpt/recordings/recording.mp3"
 
@@ -39,18 +38,45 @@ def record_audio(path, filename):
     p = pyaudio.PyAudio()
     
     # Open the audio stream
-    stream = p.open(format=sample_format,
-                    channels=channels,
-                    rate=fs,
-                    frames_per_buffer=chunk,
-                    input=True)
-    
+    # stream = p.open(format=sample_format,
+    #                 channels=channels,
+    #                 rate=fs,
+    #                 frames_per_buffer=chunk,
+    #                 input=True)
+   
+    # frames = []
     frames = []
     
     # Create a key event handler for starting and stopping recording
     def on_key_press(symbol, modifiers):
         if symbol == pyglet.window.key.SPACE:
-            print("Recording started")
+            # print("Recording started")
+            # global stream 
+            # stream = p.open(format=sample_format,
+            #         channels=channels,
+            #         rate=fs,
+            #         frames_per_buffer=chunk,
+            #         input=True)     
+            # pyglet.clock.schedule_interval(on_update, 1 / 60.0)
+            # Start the countdown timer
+            count = 3
+            def countdown(dt):
+                nonlocal count
+                count -= 1
+                label.text = f"Recording will start in {count} seconds\nRelease SPACEBAR to stop recording"
+                if count == 0:
+                    pyglet.clock.unschedule(countdown)
+                    pyglet.clock.schedule_interval(on_update, 1 / 60.0)
+                    label.text = "Recording..."
+                    print("Recording...")
+            pyglet.clock.schedule_interval(countdown, 1)
+
+            global stream 
+            stream = p.open(format=sample_format,
+                    channels=channels,
+                    rate=fs,
+                    frames_per_buffer=chunk,
+                    input=True)     
             pyglet.clock.schedule_interval(on_update, 1 / 60.0)
     
     def on_key_release(symbol, modifiers):
@@ -80,10 +106,28 @@ def record_audio(path, filename):
         data = stream.read(chunk)
         frames.append(data)
     
-    # Create a window and attach the key event handlers
+    # Create a window and attach the key event handlers 
     window = pyglet.window.Window()
     window.on_key_press = on_key_press
     window.on_key_release = on_key_release
+
+
+    # Creating the label to display the message
+    label_text = "Press and hold SPACEBAR to START recording\nRelease SPACEBAR to STOP recording"
+    label = pyglet.text.Label(label_text,
+                          font_name="Arial",
+                          font_size=24,
+                          x=window.width//2, y=window.height//2,
+                          multiline=True,
+                          width=window.width,
+                          height=window.height,
+                          anchor_x="center", anchor_y="center")
+
+    # Define the on_draw function
+    @window.event
+    def on_draw():
+        window.clear()
+        label.draw()
     
     # Start the Pyglet event loop
     pyglet.app.run()
@@ -110,7 +154,7 @@ def record_audio_with_fixed_duration(path, filename, duration):
     
     frames = []
     
-    # Record the audio for the specified duration
+    # Record the audio for the specified duration   
     for i in range(int(fs / chunk * duration)):
         data = stream.read(chunk)
         frames.append(data)
@@ -146,7 +190,9 @@ def chatgpt_response(question):
     # Loading the whisper model
     load_whisper_model()
     # using the openai api key
-    openai.api_key=openai_api_key
+    # openai.api_key= os.environ.get("OPENAI_API_KEY")
+    openai.api_key= os.environ["OPENAI_API_KEY"]
+    #openai.api_key=openai_api_key
     conversation=[{"role":"system","content":"You are a helpful assistant"}]
     # completion=openai.Completion.create(engine="text-davinci-003",prompt=question,max_tokens=1000)
     # response=completion.choices[0]['text']
@@ -180,7 +226,7 @@ def chatgpt_response(question):
             elif(confirmation=='n' or confirmation=='N'):
                 return
             else:
-                print("Invalid Option entered")
+                print("Enter a valid option from the following:(Y/y/N/n)")
 
     # Writing the output to a json file
     # sorted_output=json.dumps(answer)
